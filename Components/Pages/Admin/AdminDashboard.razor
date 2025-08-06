@@ -1,0 +1,126 @@
+﻿@page "/admin/dashboard"
+@using HelpDesk_Benedict.Models
+@using HelpDesk_Benedict.Components.Modals
+@using HelpDesk_Benedict.Services
+@using Microsoft.AspNetCore.Authorization
+@inject TicketService ticketService
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+<div>
+    <div>
+        <h1>Pending Tickets</h1>
+        <p>300</p>
+        <h1>In Progress</h1>
+        <p>10</p>
+    </div> 
+    <div class="flex user-select-none" style="flex:1">     
+        <table class="table ticket-table">
+            <thead>
+                <tr>
+                    <th scope="col">Title<span class="sort-icon bi bi-sort-alpha-down" /></th>
+                    <th scope="col">Description<span class="sort-icon bi bi-sort-alpha-down"/></th>
+                    <th scope="col">Created At<span class="sort-icon bi bi-sort-alpha-down"/></th>
+                    <th scope="col">Status<span class="sort-icon bi bi-sort-alpha-down" /></th>
+                    <th scope="col">Room<span class="sort-icon bi bi-sort-alpha-down"/></th>
+                    <th scope="col">Floor<span class="sort-icon bi bi-sort-alpha-down" /></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var ticket in tickets)
+                {
+                    <tr @onclick="() => openModal(ticket)" class="tr-item">
+                        <td>@ticket.Title</td>
+                        <td>@Truncate(ticket.Description, 30)</td>
+                        <td>@ticket.CreatedAt</td>
+                        <td>@ticket.Status</td>
+                        <td>@ticket.Room.Name</td>
+                        <td>@ticket.Room.Floor</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+       <Modal @ref=modal Class="modal-left"></Modal>
+
+
+</div>
+
+@code {
+    private Modal modal;
+    private Ticket selectedTicket;
+    List<Ticket> tickets = new List<Ticket>();
+
+    protected override async Task OnInitializedAsync() {
+        tickets = await ticketService.GetTicketsAsync();
+    }
+    void selectTicket(Ticket ticket)
+    {
+        selectedTicket = ticket;
+    }
+    private async Task openModal(Ticket ticket) {
+        var parameters = new Dictionary<string, object>();
+        parameters.Add("Ticket", ticket);
+        try {
+            await modal.ShowAsync<TicketDetailsModal>(title: "Ticket Details", parameters: parameters);
+        }
+        catch (Exception ex) {
+            Console.WriteLine($"Error opening modal: {ex.Message}");
+        }
+    }
+    string Truncate(string text, int maxLength) {
+        if (string.IsNullOrEmpty(text)) return text;
+        return text.Length <= maxLength ? text : text.Substring(0, maxLength) + "...";
+    }
+}
+
+
+<style>
+    .ticket-table th,
+    .ticket-table td {
+        text-align: center; 
+        border-right: 1px solid #ddd; 
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .custom-table th:last-child,
+    .custom-table td:last-child {
+        border-right: none;
+    }
+
+    .sort-icon {
+        font-size: 0.8em;
+        cursor: pointer;
+        margin-left: 5px;
+        opacity: 0.6;
+    }
+
+    .sort-icon:hover {
+        opacity: 1;
+    }
+
+    .tr-item{
+        transition: transform 0.3s ease-in-out;
+    }   
+    .tr-item:hover {
+        transform: scale(1.1);
+    }
+
+    .modal-left .modal-dialog {
+        top: 20px;
+        bottom: 20px;
+        position: fixed;
+        right: 20px;      
+        height: 90vh; 
+        width: 400px;
+        background-color: white;
+        overflow-y: auto;
+        z-index: 1050;
+        border-radius: 15px;       
+    }
+</style>
+
+

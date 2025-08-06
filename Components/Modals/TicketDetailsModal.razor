@@ -1,0 +1,70 @@
+﻿@using HelpDesk_Benedict.Models
+@using HelpDesk_Benedict.Components.Helpers;
+@using HelpDesk_Benedict.Services
+@using HelpDesk_Benedict.Components.TicketCards;
+@inject RoomService roomService;
+
+<Card Class="mb-3 w-100">
+    <CardBody>
+        <!-- Kopfzeile -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="fw-bold">
+                #@Ticket.Id - @Ticket.Title
+            </div>
+            <span class="badge rounded-5 bg-primary fw-lighter">@Ticket.Status</span>
+        </div>
+
+        <div class="d-flex text-center border-top pt-2">
+            <div class="flex-fill border-end">
+                <small class="fw-lighter">Ticket Type</small><br />
+                @Ticket.Category
+            </div>
+            <div class="flex-fill border-end align-content-center">
+                <small class="fw-lighter">Ticket Priority</small><br /> 
+                <div class="opacity-box" style="background-color: @priorityColor">                    
+                </div>               
+                <span style="position:relative; z-index:1;">
+                    <i class="bi bi-dot" style="color: @priorityColor"></i>
+                    @Ticket.Priority
+                </span>
+            </div>
+            <div class="flex-fill">
+                <small class="fw-lighter">Ticket Room</small><br />
+                <i class="bi bi-door-open"></i>
+                @Ticket.Room.Name
+            </div>
+        </div>
+    </CardBody>
+</Card>
+
+
+@code {
+    [Parameter] public Ticket Ticket { get; set; }
+
+    private string priorityColor;
+
+    protected override void OnParametersSet()
+    {
+        TicketPriority ticketPriority = Ticket.Priority;
+        priorityColor = ticketPriority switch {
+            TicketPriority.Low => "green",
+            TicketPriority.Medium => "orange",
+            TicketPriority.High => "red",
+            TicketPriority.Urgent => "darkred"
+        };
+    }
+}
+
+<style>
+    .opacity-box {
+        position: absolute;
+        inset: 0;
+        border-radius: 1rem;
+        opacity: 0.2;
+    }
+
+    .opacity-box p {
+        opacity: 1;
+    }
+
+</style>

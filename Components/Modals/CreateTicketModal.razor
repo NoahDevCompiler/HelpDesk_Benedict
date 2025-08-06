@@ -1,0 +1,84 @@
+﻿@using HelpDesk_Benedict.Models
+@using HelpDesk_Benedict.Components.Helpers;
+@using HelpDesk_Benedict.Services
+@inject RoomService roomService;
+
+<div class="row">
+    <div class="col-5 col-md-3 text-end">Ticket Title</div>
+    <div class="col-7 col-md-9">
+        <InputText DisplayName="e.g Mercedes gt63s" @bind-Value="tTitle"></InputText>
+    </div>
+</div>
+<div class="row">
+    <div class="col-5 col-md-3 text-end">Description</div>
+    <div class="col-7 col-md-9">
+        <InputText DisplayName="CHF" @bind-Value="tDescription"></InputText>
+    </div>
+</div>
+<div class="row z-3">
+    <div class="col-5 col-md-3 text-end">Room</div>
+    <div class="col-7 col-md-9">
+       <RoomSelector @bind-AvailableOptions="roomNames" @bind-SelectedOption="tRoom" />
+    </div>
+</div>
+<div class="row z-1">
+    <div class="col-5 col-md-3 text-end">Priority</div>
+    <div class="col-7 col-md-9">
+        <Dropdown style=" background-color: gainsboro; color: black;">
+            <DropdownToggleButton>@(tPriority.ToString() ?? "Priority")</DropdownToggleButton>
+            <DropdownMenu>
+                @foreach (var item in new[] { TicketPriority.Low, TicketPriority.Medium, TicketPriority.High, TicketPriority.Urgent }) {
+                    <DropdownItem @onclick="() => SelectType(item)" Type="DropdownItemType.Link">@item</DropdownItem>
+                }
+            </DropdownMenu>
+        </Dropdown>
+    </div>
+</div>
+<div class="row">
+    <div class="col-5 col-md-3 text-end">Priority</div>
+    <div class="col-7 col-md-9">
+        <Button @onclick="AddTicketAsync">Add Saving</Button>
+    </div>
+</div>
+
+
+@code {
+    [Parameter] public EventCallback<Ticket> OnClickCallback { get; set; }
+
+    private string tTitle;
+    private string tDescription;
+    private Ticket ticket;
+    private List<string> roomNames = new List<string>();
+    private List<Room> rooms = new List<Room>();
+    private string tRoom = default!;    
+    private DateTime createDate = DateTime.Now;
+    private TicketPriority tPriority = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        rooms = await roomService.GetRoomAsync();
+        roomNames = rooms.Select(n => n.Name).ToList();
+    }
+
+    private void SelectType(TicketPriority prio) {
+        tPriority = prio;
+        StateHasChanged();
+    }
+    private async Task AddTicketAsync()
+    {
+        var selectedRoom = rooms.FirstOrDefault(r => r.Name == tRoom);
+        if (selectedRoom == null)
+        {
+            return;
+        }
+
+        ticket = new Ticket {
+                Title = tTitle,
+                Description = tDescription,
+                CreatedAt = DateTime.Now,
+                Room = selectedRoom,
+                Priority = tPriority
+        };
+        await OnClickCallback.InvokeAsync(ticket);
+    }
+}

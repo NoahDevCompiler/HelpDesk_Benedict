@@ -1,0 +1,87 @@
+﻿@page "/client/dashboard"
+@using HelpDesk_Benedict.Components.Modals
+@using HelpDesk_Benedict.Models
+@using HelpDesk_Benedict.Services
+@using Microsoft.AspNetCore.Authorization
+@inject TicketService ticketService
+@inject UserDataService userService
+@attribute [Authorize(Roles = "Dozent")]
+@rendermode InteractiveServer
+
+<div class="container my-5">
+    <Button class="top-button rounded-3 bg-black text-white" @onclick="openModal">
+        Create Ticket
+        <i class="bi bi-chevron-down"></i>
+    </Button>
+    <div class="row">
+        <div class="col-md-6 text-center align-items-center">
+            <Card Class="rounded-5 shadow p-3 bg-light">
+                <CardBody>
+                   <div class="d-flex justify-content-between gap-5">
+                       <div class="d-flex flex-column gap-4">
+                            <h2 class="text-black ">Open </h2>
+                            <p>@openTickets</p>
+                       </div>
+                        <div class="d-flex flex-column gap-4">
+                            <h2 class="text-black ">Completed</h2>
+                            <p>@completedTickets</p>
+                        </div>
+                   </div>
+                </CardBody>
+            </Card>
+        </div>
+        
+    </div>
+</div>
+
+<Modal @ref="modal" OnTicketCreated="CreateTicket"></Modal>
+@code {
+    private Modal modal;
+    private int openTickets;
+    private int completedTickets;
+    private List<Ticket> TicketList = new List<Ticket>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTicketsAsync();
+    }
+
+    private async Task openModal() {
+        var parameters = new Dictionary<string, object>();
+        parameters.Add("OnClickCallback", EventCallback.Factory.Create<Ticket>(this, CreateTicket));
+
+        try
+        {
+            await modal.ShowAsync<CreateTicketModal>(title: "Create Ticket", parameters: parameters);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error opening modal: {ex.Message}");
+        }
+
+    }
+
+    private async Task CreateTicket(Ticket ticket)
+    {
+        var userId = await userService.GetUserIdAsync();
+        ticket.UserId = userId;
+
+        await ticketService.CreateTicketAsync(ticket);
+        await modal.HideAsync();
+        await LoadTicketsAsync();
+        StateHasChanged();
+    }
+    private async Task LoadTicketsAsync() {
+        TicketList = await ticketService.GetTicketsAsync();
+        openTickets = TicketList.Count(t => t.Status == TicketStatus.Open);
+        completedTickets = TicketList.Count(t => t.Status == TicketStatus.Completed);
+    }
+}
+<style>
+    .top-button {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 1000;
+    }
+</style>
