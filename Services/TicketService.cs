@@ -33,21 +33,21 @@ namespace HelpDesk_Benedict.Services
             }
 
             try {
-                return await _context.Tickets.Where(t => t.UserId == userId).ToListAsync();
+                return await _context.Tickets.Where(t => t.UserId == userId).Include(t => t.TicketComments).ToListAsync();
             } catch (Exception ex) {
                 return null;
             }
         }
         public async Task<List<Ticket>> GetTicketsAsync() {
             try {
-                return await _context.Tickets.Include(r => r.Room).ToListAsync();
+                return await _context.Tickets.Include(r => r.Room).Include(t => t.TicketComments).ToListAsync();
             } catch (Exception ex) {
                 return null;
             }
         }
         public async Task<List<Ticket>> GetRoomTicketsAsync(Room room) {
             try {
-                return await _context.Tickets.Where(t => t.RoomId == room.Id).ToListAsync();
+                return await _context.Tickets.Where(t => t.RoomId == room.Id).Include(t => t.TicketComments).ToListAsync();
             } catch (Exception ex) {
                 return null;
             }

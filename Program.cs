@@ -20,6 +20,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
 builder.Services.AddScoped<UserDataService>();
 builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<TicketService>();
+builder.Services.AddScoped<TicketCommentService>();
 
 builder.Services.ConfigureApplicationCookie(options => {
     options.LoginPath = "/login";
@@ -34,9 +35,10 @@ builder.Services.AddBlazorBootstrap();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-
+builder.Services.AddSignalR();
 
 var app = builder.Build();
+
 
 using (var scope = app.Services.CreateScope()) {
     var services = scope.ServiceProvider;
@@ -52,6 +54,8 @@ using (var scope = app.Services.CreateScope()) {
         app.UseHsts();
     }
 
+
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
@@ -63,5 +67,7 @@ app.UseAntiforgery();
 app.MapRazorPages();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapHub<TicketCommentHub>("/ticketCommentHub");
 
 app.Run();

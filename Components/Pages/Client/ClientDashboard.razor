@@ -9,7 +9,7 @@
 @rendermode InteractiveServer
 
 <div class="container my-5">
-    <Button class="top-button rounded-3 bg-black text-white" @onclick="openModal">
+    <Button class="top-button rounded-3 bg-black text-white" @onclick="openModalCreateTicket">
         Create Ticket
         <i class="bi bi-chevron-down"></i>
     </Button>
@@ -32,6 +32,34 @@
         </div>
         
     </div>
+    <div class="flex user-select-none" style="flex:1">
+        <table class="table ticket-table">
+            <thead>
+                <tr>
+                    <th scope="col">Title<span class="sort-icon bi bi-sort-alpha-down" /></th>
+                    <th scope="col">Description<span class="sort-icon bi bi-sort-alpha-down" /></th>
+                    <th scope="col">Created At<span class="sort-icon bi bi-sort-alpha-down" /></th>
+                    <th scope="col">Status<span class="sort-icon bi bi-sort-alpha-down" /></th>
+                    <th scope="col">Room<span class="sort-icon bi bi-sort-alpha-down" /></th>
+                    <th scope="col">Floor<span class="sort-icon bi bi-sort-alpha-down" /></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var ticket in TicketList) {
+                    <tr @onclick="() => openModalDetails(ticket)" class="tr-item">
+                        <td>@ticket.Title</td>
+                        <td>@Truncate(ticket.Description, 30)</td>
+                        <td>@ticket.CreatedAt</td>
+                        <td>@ticket.Status</td>
+                        <td>@ticket.Room.Name</td>
+                        <td>@ticket.Room.Floor</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <Modal @ref=modal Class="modal-left"></Modal>
 </div>
 
 <Modal @ref="modal" OnTicketCreated="CreateTicket"></Modal>
@@ -46,7 +74,7 @@
         await LoadTicketsAsync();
     }
 
-    private async Task openModal() {
+    private async Task openModalCreateTicket() {
         var parameters = new Dictionary<string, object>();
         parameters.Add("OnClickCallback", EventCallback.Factory.Create<Ticket>(this, CreateTicket));
 
@@ -60,7 +88,17 @@
         }
 
     }
-
+   
+    private async Task openModalDetails(Ticket ticket) {
+        var parameters = new Dictionary<string, object>();
+        parameters.Add("Ticket", ticket);
+        try {
+            await modal.ShowAsync<TicketDetailsModal>(title: "Ticket Details", parameters: parameters);
+        }
+        catch (Exception ex) {
+            Console.WriteLine($"Error opening modal: {ex.Message}");
+        }
+    }
     private async Task CreateTicket(Ticket ticket)
     {
         var userId = await userService.GetUserIdAsync();
@@ -75,6 +113,10 @@
         TicketList = await ticketService.GetTicketsAsync();
         openTickets = TicketList.Count(t => t.Status == TicketStatus.Open);
         completedTickets = TicketList.Count(t => t.Status == TicketStatus.Completed);
+    }
+    string Truncate(string text, int maxLength) {
+        if (string.IsNullOrEmpty(text)) return text;
+        return text.Length <= maxLength ? text : text.Substring(0, maxLength) + "...";
     }
 }
 <style>

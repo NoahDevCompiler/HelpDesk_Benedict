@@ -1,8 +1,13 @@
 ﻿@using HelpDesk_Benedict.Models
 @using HelpDesk_Benedict.Components.Helpers;
+@using HelpDesk_Benedict.Models.DTO
 @using HelpDesk_Benedict.Services
 @using HelpDesk_Benedict.Components.TicketCards;
-@inject RoomService roomService;
+@using Microsoft.AspNetCore.SignalR.Client
+@inject UserDataService userService;
+@inject TicketCommentService TicketCommentService;
+@inject NavigationManager NavigationManager
+@implements IAsyncDisposable;
 
 <Card Class="mb-3 w-100">
     <CardBody>
@@ -36,15 +41,94 @@
         </div>
     </CardBody>
 </Card>
+<div class="w-100">
+    <div class="d-flex justify-content-center align-items-center mb-2">
+        <div class="fw-bold">
+            Ticket Comments
+        </div>
+        <span class="badge rounded-5 bg-secondary fw-lighter">2</span>
+    </div>
+    
+    <div class="d-flex flex-column text-center border-top pt-2">
+        @if(Ticket.TicketComments?.Count == 0)
+        {
+            <div class="text-center text-muted w-100">
+                No comments yet.
+            </div>
+        } 
+        else if(Ticket.TicketComments?.Count > 0) {
 
+        @foreach(var comment in Ticket.TicketComments!)
+        {
+            bool isOwnComment = comment.UserId == userId;
+
+            <div class="flex w-100 my-2 align-items-center" style="justify-content:@(isOwnComment ? "flex-start" : "flex-end")">
+                <div class="w-50 h-auto p-3 rounded-5 shadow text-black
+                            @(isOwnComment ? "bg-primary text-black rounded-br-none" : "bg-secondary text-black rounded-bl-none")">
+                    <div class="text-sm">
+                        @comment.Message
+                    </div>
+                    <div class="text-xs text-gray-400 mt-1 text-right">
+                        @comment.Timestamp.ToString("HH:mm")
+                    </div>
+                </div>
+            </div>
+        }
+        }
+        <div class="border-t p-4">
+            <EditForm Model="@this" OnValidSubmit="AddCommentAsync">
+                <div class="flex items-center space-x-2">
+                    <InputText 
+                        @bind-Value="NewCommentText" 
+                        class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300" 
+                        placeholder="Write Comment..." 
+                        @onkeydown="HandleKeyDown"/>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                        Send
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+
+</div>
 
 @code {
+
     [Parameter] public Ticket Ticket { get; set; }
 
+    private HubConnection? hubConnection;
+
     private string priorityColor;
+    private string userId;
+    private string NewCommentText { get; set; } = string.Empty; 
+
+    protected override async Task OnInitializedAsync()
+    {
+        userId = await userService.GetUserIdAsync();
+
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/ticketCommentHub"))
+            .Build();
+
+        hubConnection.On<TicketCommentDTO>("ReceiveComment", (comment) => {
+        if (comment.UserId == userId) return;
+
+            Ticket.TicketComments.Add(new TicketComment {
+                TicketId = comment.TicketId,
+                Message = comment.Message,
+                UserId = comment.UserId,
+                Timestamp = comment.Timestamp,
+                Visibility = comment.Visibility
+            });
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+    }
 
     protected override void OnParametersSet()
-    {
+    {   
         TicketPriority ticketPriority = Ticket.Priority;
         priorityColor = ticketPriority switch {
             TicketPriority.Low => "green",
@@ -52,8 +136,44 @@
             TicketPriority.High => "red",
             TicketPriority.Urgent => "darkred"
         };
+
     }
+
+
+    private async Task AddCommentAsync() {
+        if (string.IsNullOrWhiteSpace(NewCommentText)) return;
+
+        var comment = new TicketComment {
+            TicketId = Ticket.Id,
+            Message = NewCommentText,
+            UserId = userId,
+            Visibility = CommentVisibility.Public,
+            Timestamp = DateTime.Now
+        };
+
+        var commentDTO = TicketCommentDTO.ToDto(comment);
+        
+        await TicketCommentService.AddCommentAsync(comment);
+        await hubConnection!.SendAsync("SendComment", commentDTO);
+
+        NewCommentText = string.Empty;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey) {
+            await AddCommentAsync();
+        }
+    }
+
+    public async ValueTask DisposeAsync() {
+        if (hubConnection != null) {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
 }
+
 
 <style>
     .opacity-box {

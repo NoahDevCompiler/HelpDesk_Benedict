@@ -18,5 +18,13 @@ namespace HelpDesk_Benedict.Models
         public string Message { get; set; }
 
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+        [Required]
+        public CommentVisibility Visibility { get; set; }
+    }
+    public enum CommentVisibility
+    {
+        Public,
+        Internal
     }
 }

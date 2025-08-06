@@ -1,7 +1,12 @@
 ﻿@page "/admin/inbox"
+@using HelpDesk_Benedict.Models
+@using HelpDesk_Benedict.Services
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin")]
+@inject TicketCommentHub CommentEvents
 <h3>AdminInbox</h3>
+
+
 
 @code {
 
