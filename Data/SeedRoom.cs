@@ -5,9 +5,7 @@ namespace HelpDesk_Benedict.Data
     public class SeedRoom
     {
         public static async Task SeedRoomsAsync(ApplicationDbContext context) {
-            if(context.Rooms.Any()) {
-                return;
-            }
+           
             var rooms = new List<Room> {
                 new() { Name = "Atlas", Description = "Conference Room", Floor = "1.Stock" },
                 new() { Name = "Genf", Description = "Meeting Room", Floor = "3.Stock" },
@@ -20,7 +18,6 @@ namespace HelpDesk_Benedict.Data
                 new() { Name = "Rom", Description = "Breakout Room", Floor = "3.Stock" },
                 new() { Name = "Ontario", Description = "Breakout Room", Floor = "3.Stock" },
                 new() { Name = "Tokyo", Description = "Breakout Room", Floor = "3.Stock" },
-                new() { Name = "Prag", Description = "Breakout Room", Floor = "3.Stock" },
                 new() { Name = "Wien", Description = "Breakout Room", Floor = "3.Stock" },
                 new() { Name = "Vaduz", Description = "Breakout Room", Floor = "3.Stock" },
                 new() { Name = "Prag", Description = "Breakout Room", Floor = "3.Stock" },

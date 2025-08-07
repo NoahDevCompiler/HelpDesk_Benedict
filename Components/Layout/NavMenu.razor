@@ -1,5 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
+@using Microsoft.FluentUI.AspNetCore.Components
 @inject AuthenticationStateProvider AuthStateProvider
 
 
@@ -24,11 +25,11 @@
                 <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
             </NavLink>
         </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link d-flex align-items-center" href="admin/inbox">
-                <span class="nav-menu-icon bi bi-bell-fill" aria-hidden="true"></span> Inbox
-            </NavLink>
+        
+        <div class="nav-item px-3">          
+                <NavLink class="nav-link d-flex align-items-center" href="admin/inbox">
+                    <span class="nav-menu-icon bi bi-bell-fill" aria-hidden="true"></span> Inbox
+                </NavLink>
         </div>
     </nav>
     <AuthorizeView>

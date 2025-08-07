@@ -3,11 +3,14 @@
 @using HelpDesk_Benedict.Services
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin")]
-@inject TicketCommentHub CommentEvents
 <h3>AdminInbox</h3>
+@inject TicketService ticketService
+@inject NavigationManager NavigationManager
 
 
-
+<div class="flex flex-column justify-content-center">
+   <h1>New Notifications</h1>
+</div>
 @code {
 
 }

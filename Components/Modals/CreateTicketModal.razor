@@ -6,13 +6,13 @@
 <div class="row">
     <div class="col-5 col-md-3 text-end">Ticket Title</div>
     <div class="col-7 col-md-9">
-        <InputText DisplayName="e.g Mercedes gt63s" @bind-Value="tTitle"></InputText>
+        <InputText @bind-Value="tTitle"></InputText>
     </div>
 </div>
 <div class="row">
     <div class="col-5 col-md-3 text-end">Description</div>
     <div class="col-7 col-md-9">
-        <InputText DisplayName="CHF" @bind-Value="tDescription"></InputText>
+        <InputText  @bind-Value="tDescription"></InputText>
     </div>
 </div>
 <div class="row z-3">
@@ -37,7 +37,7 @@
 <div class="row">
     <div class="col-5 col-md-3 text-end">Priority</div>
     <div class="col-7 col-md-9">
-        <Button @onclick="AddTicketAsync">Add Saving</Button>
+        <Button @onclick="AddTicketAsync">Add Ticket</Button>
     </div>
 </div>
 
@@ -82,3 +82,9 @@
         await OnClickCallback.InvokeAsync(ticket);
     }
 }
+
+<style>
+    .row {
+                margin-bottom: 10px;
+    }
+</style>

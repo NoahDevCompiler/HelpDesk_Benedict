@@ -5,6 +5,7 @@ using HelpDesk_Benedict.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.SqlServer;
+using Microsoft.FluentUI.AspNetCore.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
+
+builder.Services.AddFluentUIComponents();
+builder.Services.AddScoped<GlobalState>();
 
 builder.Services.AddScoped<UserDataService>();
 builder.Services.AddScoped<RoomService>();

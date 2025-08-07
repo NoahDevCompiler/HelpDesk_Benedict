@@ -84,9 +84,8 @@
         if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(SearchTerm)) {
             var trimmed = SearchTerm.Trim();
 
-            if (FilteredOptions.Count() == 0)
+            if (FilteredOptions.Count() == 0 || FilteredOptions.Count() > 1)
             {
-                SearchTerm = "";
                 return;
             }
             if (FilteredOptions.Count() == 1)
