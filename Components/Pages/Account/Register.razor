@@ -1,0 +1,65 @@
+﻿@using HelpDesk_Benedict.Models
+@using HelpDesk_Benedict.Models.ViewModels
+@using HelpDesk_Benedict.Services
+@using Microsoft.AspNetCore.Identity
+@inject UserDataService userService;
+@inject NavigationManager NavigationManager
+@inject ClientConfirmationService clientConfirmationService;
+@inject UserManager<ApplicationUser> UserManager;
+@rendermode InteractiveServer
+
+@page "/register"
+
+@if (loginFailed) {
+    <div class="alert alert-danger">@errorMessage</div>
+}
+<EditForm Model="Model" OnValidSubmit="RegisterUser" FormName="loginForm">
+    <DataAnnotationsValidator />
+    <Microsoft.AspNetCore.Components.Forms.ValidationSummary />
+    <div>
+        <label for="username">Username</label>
+        <InputText id="email" class="form-control" @bind-Value="Model.UserName"></InputText>
+    </div>
+    <div>
+        <label for="email">E-Mail</label>
+        <InputText id="email" class="form-control" @bind-Value="Model.Email"></InputText>
+    </div>
+    <div class="mb-3">
+        <label for="password">Passwort</label>
+        <InputText id="password" type="password" class="form-control" @bind-Value="password" />
+    </div>
+    <button type="submit" class="btn btn-primary">Register</button>
+    
+</EditForm>
+
+@code {
+    [SupplyParameterFromForm]
+    public ApplicationUser Model { get; set; } = new();
+
+    private string errorMessage = string.Empty;
+    private string password;
+    private bool loginFailed = false;
+
+    private async Task RegisterUser()
+    {
+        var result = await userService.RegisterUserAsync(Model, password);
+
+        if (result.Succeeded)
+        {
+            var token = await UserManager.GenerateEmailConfirmationTokenAsync(Model);
+            var encodedToken = Uri.EscapeDataString(token);
+
+            var confirmationLink = $"{NavigationManager.BaseUri}Account/ConfirmEmail?userId={Model.Id}&token={encodedToken}";
+
+            await clientConfirmationService.SendConfirmationEmailAsync(Model.Email, confirmationLink);
+            loginFailed = false;
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+        }
+        else
+        {
+            loginFailed = true;
+            errorMessage = string.Join(", ", result.Errors.Select(e => e.Description));
+        }
+    }   
+
+}

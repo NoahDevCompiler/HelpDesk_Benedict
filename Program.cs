@@ -3,6 +3,8 @@ using HelpDesk_Benedict.Data;
 using HelpDesk_Benedict.Models;
 using HelpDesk_Benedict.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.SqlServer;
 using Microsoft.FluentUI.AspNetCore.Components;
@@ -14,9 +16,13 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
     options.User.RequireUniqueEmail = true;
+    options.SignIn.RequireConfirmedEmail = true;
+    options.SignIn.RequireConfirmedAccount = true;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
+
+
 
 builder.Services.AddFluentUIComponents();
 builder.Services.AddScoped<GlobalState>();
@@ -25,6 +31,13 @@ builder.Services.AddScoped<UserDataService>();
 builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<TicketService>();
 builder.Services.AddScoped<TicketCommentService>();
+builder.Services.AddScoped<ClientConfirmationService>();
+
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+builder.Services.AddTransient<IEmailSender, EmailSender>();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
 
 builder.Services.ConfigureApplicationCookie(options => {
     options.LoginPath = "/login";

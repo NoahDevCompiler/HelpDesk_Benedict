@@ -37,6 +37,12 @@ namespace HelpDesk_Benedict.Services
                 return await _userManager.GetUserAsync(user);
             }
             return null;
+        }        
+        public async Task<IdentityResult> RegisterUserAsync(ApplicationUser user, string password)
+        {
+            user.AdminConfirmed = false;
+            user.EmailConfirmed = false;
+            return await _userManager.CreateAsync(user, password);
         }
         public async Task<string> GetUserIdAsync() {
             var user = await GetCurrentUserAsync();

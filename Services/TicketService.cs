@@ -1,5 +1,6 @@
 ﻿using HelpDesk_Benedict.Data;
 using HelpDesk_Benedict.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -9,10 +10,12 @@ namespace HelpDesk_Benedict.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly UserDataService _userDataService;
-        public TicketService(ApplicationDbContext context, UserDataService userDataService)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public TicketService(ApplicationDbContext context, UserDataService userDataService, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _userDataService = userDataService;
+            _httpContextAccessor = httpContextAccessor;
         }   
 
         public async Task CreateTicketAsync(Ticket ticket)
@@ -52,6 +55,19 @@ namespace HelpDesk_Benedict.Services
                 return null;
             }
         }
+        public async Task ChangeStatus(Ticket ticket, TicketStatus status) {
+            var user = _httpContextAccessor.HttpContext.User;
+            var currentUser = await _userDataService.GetCurrentUserAsync();
 
+            bool isOwner = ticket.User == currentUser;
+            bool isPrivileged = user.IsInRole("Admin") || user.IsInRole("Support");
+
+            if (!isOwner ||!isPrivileged) {
+                throw new UnauthorizedAccessException("You do not have permission to change the status of this ticket.");
+            }
+
+            await _context.Tickets.Where(t => t.Id == ticket.Id)
+                .ExecuteUpdateAsync(t => t.SetProperty(t => t.Status, status));
+        }
     }
 }
