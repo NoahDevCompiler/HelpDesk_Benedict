@@ -27,7 +27,7 @@ namespace HelpDesk_Benedict.Services
                 From = new MailAddress(_smtpSettings.FromEmail, _smtpSettings.FromName),
                 Subject = subject,
                 Body = htmlMessage,
-                IsBodyHtml = true
+                IsBodyHtml = true,
             };
             mailMessage.To.Add(email);
 

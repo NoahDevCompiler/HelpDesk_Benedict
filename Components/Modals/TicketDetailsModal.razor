@@ -2,10 +2,10 @@
 @using HelpDesk_Benedict.Components.Helpers;
 @using HelpDesk_Benedict.Models.DTO
 @using HelpDesk_Benedict.Services
-@using HelpDesk_Benedict.Components.TicketCards;
 @using Microsoft.AspNetCore.SignalR.Client
 @inject UserDataService userService;
 @inject TicketCommentService TicketCommentService;
+
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable;
 
@@ -113,7 +113,7 @@
             .Build();
 
         hubConnection.On<TicketCommentDTO>("ReceiveComment", (comment) => {
-        if (comment.UserId == userId) return;
+            if (comment.UserId == userId) return;
 
             Ticket.TicketComments.Add(new TicketComment {
                 TicketId = comment.TicketId,
@@ -153,7 +153,7 @@
         };
 
         var commentDTO = TicketCommentDTO.ToDto(comment);
-        
+
         await TicketCommentService.AddCommentAsync(comment);
         await hubConnection!.SendAsync("SendComment", commentDTO);
 
