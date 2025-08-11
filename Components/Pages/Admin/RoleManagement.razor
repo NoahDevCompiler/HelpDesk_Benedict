@@ -1,0 +1,95 @@
+﻿@page "/admin/role-management"
+@using HelpDesk_Benedict.Models
+@using HelpDesk_Benedict.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> userManager  
+@inject UserDataService userDataService
+@inject RoleManager<IdentityRole> roleManager
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+
+<h3>Available Roles</h3>
+<div class="flex flex-column">
+    @foreach (var role in roles)
+    {
+        <div class="flex flex-row justify-content-between">
+            <span>@role.Name</span>
+        </div>
+
+    }
+</div>
+<div class="flex flex-column">
+    <h1>Verified Users</h1>
+    @foreach (var user in users) {
+        @if (user.EmailConfirmed)
+        {
+            <div class="flex flex-row justify-content-between">
+                <span>@user.UserName</span>
+                <span>@user.Email</span>
+                <button class="btn btn-sm btn-outline-primary" @onclick="() => { editingFlag = true; selectedUser = user; }">
+                    <i class="bi bi-pencil"></i> 
+                </button>
+            </div>
+        }       
+    }
+</div>
+<div class="flex flex-column">
+    <h1>Not Verfied Users</h1>
+    @foreach (var user in users) {
+        @if (!user.EmailConfirmed) {
+            <div class="flex flex-row justify-content-between">
+                <span>@user.UserName</span>
+                <span>@user.Email</span>
+                <button class="btn btn-sm btn-outline-primary" @onclick="() => { editingFlag = true; selectedUser = user; }">
+                    <i class="bi bi-pencil"></i> 
+                </button>               
+            </div>
+        }
+    }
+    @if(editingFlag && selectedUser != null)
+    {
+        <div class="col-7 col-md-9">
+            <Dropdown style=" background-color: gainsboro; color: black;">
+                <DropdownToggleButton>@(selectedRole?.ToString() ?? "Select")</DropdownToggleButton>
+                <DropdownMenu>
+                    @foreach(var role in roles) {
+                        <DropdownItem @onclick="() => ChangeRoleAsync(selectedUser, role)" Type="DropdownItemType.Link">@role</DropdownItem>
+                    }
+            </DropdownMenu>
+        </Dropdown>
+        </div>
+    }
+</div>
+
+
+@code {
+    private List<IdentityRole>? roles;
+    private List<ApplicationUser>? users;
+    private bool editingFlag = false;
+    private IdentityRole? selectedRole;
+    private ApplicationUser? selectedUser;
+
+    protected override void OnInitialized()
+    {
+        roles = GetAllRoles();
+        users = GetAllUsers();
+    }
+    private List<IdentityRole> GetAllRoles() {
+        return roleManager.Roles.ToList();
+    }
+    private List<ApplicationUser> GetAllUsers() {
+        return userManager.Users.ToList();
+    }
+    private async Task ChangeRoleAsync(ApplicationUser user, IdentityRole role)
+    {
+        if (user == null) return;
+
+        var roles = await userDataService.GetUserRoles(user);
+        var removeResult = await userManager.RemoveFromRolesAsync(user, roles.AsEnumerable() );
+
+        await userManager.AddToRoleAsync(user, role.ToString());
+    }
+
+}
+ 

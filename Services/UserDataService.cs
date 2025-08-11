@@ -55,6 +55,10 @@ namespace HelpDesk_Benedict.Services
             await _signInManager.SignInAsync(user, isPersistent: false);
             _navigation.NavigateTo("/", forceLoad: true);
         }
+        public async Task<IList<string>> GetUserRoles(ApplicationUser user) {
+            
+            return await _userManager.GetRolesAsync(user);           
+        }
 
 
     }

@@ -1,0 +1,48 @@
+﻿@page "/denied"
+@using HelpDesk_Benedict.Models
+@using HelpDesk_Benedict.Services
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> userManager
+@inject UserDataService UserDataService
+@rendermode InteractiveServer
+
+<div class="justify-content-center top-50 align-items-center">
+    <h3>AccessDenied</h3>
+    <p>@errorMsg</p>
+    <p>Your Current User Role @currentRole</p>
+</div>
+
+
+@code {
+    public string errorMsg = string.Empty;
+    public string currentRole = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userId = await UserDataService.GetUserIdAsync();
+        var user = await userManager.FindByIdAsync(userId);
+
+        if (user == null)
+        {
+            errorMsg = "Macht kein Sinn";
+            return;
+        }
+        IList<string> userRoles = await UserDataService.GetUserRoles(user);
+
+        if (userRoles == null || userRoles.Count == 0)
+        {
+            errorMsg = "Your Currently arent Assigned by Your Admin, Wait till your Admin Confirmed your Identiy and Asigned a Role.";
+            return;
+        }
+
+        if (userRoles != null)
+        {
+            foreach (var userRole in userRoles)
+            {
+                currentRole += $"{userRole}, ";
+            }
+            StateHasChanged();
+        }
+
+    }
+}

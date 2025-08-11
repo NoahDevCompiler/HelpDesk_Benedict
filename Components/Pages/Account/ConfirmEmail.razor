@@ -1,0 +1,48 @@
+﻿@page "/account/confirmemail"
+@using Azure.Core
+@using HelpDesk_Benedict.Models
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
+
+
+
+@if (isConfirmed) {
+    <p>Deine E-Mail wurde erfolgreich bestätigt!</p>
+} else {
+    <p>Bestätigung fehlgeschlagen. Bitte überprüfe den Link oder kontaktiere den Support.</p>
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "userId")]
+    public string UserId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "token")]
+    public string Token { get; set; }
+
+    private bool isConfirmed = false;
+    private bool isProcessing = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (string.IsNullOrEmpty(UserId) || string.IsNullOrEmpty(Token)) {
+            isConfirmed = false;
+            isProcessing = false;
+            return;
+        }
+
+        if (UserId == null || Token == null) {
+            return;
+        }
+   
+        var user = await UserManager.FindByIdAsync(UserId);
+        if (user == null) {
+            isConfirmed = false;
+            return;
+        }
+        var result = await UserManager.ConfirmEmailAsync(user, Token);
+        isConfirmed = result.Succeeded;
+    }
+}

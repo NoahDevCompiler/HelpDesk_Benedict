@@ -6,8 +6,11 @@ namespace HelpDesk_Benedict.Services
     public class TicketCommentHub : Hub
     {
         public async Task SendComment(TicketCommentDTO comment)
-        {            
-            await Clients.All.SendAsync("ReceiveComment", comment);
+        {
+
+            if (Clients != null) {
+                await Clients.All.SendAsync("ReceiveComment", comment);
+            }
         }
     }
 }

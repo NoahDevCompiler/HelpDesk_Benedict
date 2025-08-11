@@ -6,8 +6,6 @@
 @inject NavigationManager NavigationManager
 @inject ClientConfirmationService clientConfirmationService;
 @inject UserManager<ApplicationUser> UserManager;
-@rendermode InteractiveServer
-
 @page "/register"
 
 @if (loginFailed) {
@@ -26,7 +24,7 @@
     </div>
     <div class="mb-3">
         <label for="password">Passwort</label>
-        <InputText id="password" type="password" class="form-control" @bind-Value="password" />
+        <InputText id="password" type="password" class="form-control" @bind-Value="Model.Password" />
     </div>
     <button type="submit" class="btn btn-primary">Register</button>
     
@@ -34,22 +32,25 @@
 
 @code {
     [SupplyParameterFromForm]
-    public ApplicationUser Model { get; set; } = new();
+    public RegisterViewModel Model { get; set; } = new();
 
     private string errorMessage = string.Empty;
-    private string password;
     private bool loginFailed = false;
 
     private async Task RegisterUser()
     {
-        var result = await userService.RegisterUserAsync(Model, password);
+        var user = new ApplicationUser {
+            UserName = Model.UserName,
+            Email = Model.Email
+        };
+        var result = await userService.RegisterUserAsync(user, Model.Password);
 
         if (result.Succeeded)
         {
-            var token = await UserManager.GenerateEmailConfirmationTokenAsync(Model);
+            var token = await UserManager.GenerateEmailConfirmationTokenAsync(user);
             var encodedToken = Uri.EscapeDataString(token);
 
-            var confirmationLink = $"{NavigationManager.BaseUri}Account/ConfirmEmail?userId={Model.Id}&token={encodedToken}";
+            var confirmationLink = $"{NavigationManager.BaseUri}Account/ConfirmEmail?userId={user.Id}&token={encodedToken}";
 
             await clientConfirmationService.SendConfirmationEmailAsync(Model.Email, confirmationLink);
             loginFailed = false;

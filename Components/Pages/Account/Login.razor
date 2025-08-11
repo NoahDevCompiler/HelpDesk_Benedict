@@ -41,15 +41,24 @@
     private async Task Authenticate()
     {
         var user = await signInManager.UserManager.FindByEmailAsync(Model.Email);
-
+        user.AdminConfirmed = true;
         if (user == null)
         {
             loginFailed = true;
             errorMessage = "User not found.";
             return;
-        }   
+        }
 
-        var result = await signInManager.PasswordSignInAsync(Model.Email, Model.Password, false, false);
+        var userName = await signInManager.UserManager.GetUserNameAsync(user);
+
+        if (userName == null)
+        {
+            loginFailed = true;
+            errorMessage = "Username failed";
+            return;
+        }
+
+        var result = await signInManager.PasswordSignInAsync(userName, Model.Password, false, false);
 
         if (result.Succeeded) {
             loginFailed = false;
