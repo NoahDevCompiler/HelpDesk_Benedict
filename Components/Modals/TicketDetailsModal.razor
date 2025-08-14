@@ -5,7 +5,7 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @inject UserDataService userService;
 @inject TicketCommentService TicketCommentService;
-
+@inject TicketService TicketService
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable;
 
@@ -25,9 +25,9 @@
                 @Ticket.Category
             </div>
             <div class="flex-fill border-end align-content-center">
-                <small class="fw-lighter">Ticket Priority</small><br /> 
-                <div class="opacity-box" style="background-color: @priorityColor">                    
-                </div>               
+                <small class="fw-lighter">Ticket Priority</small><br />
+                <div class="opacity-box" style="background-color: @priorityColor">
+                </div>
                 <span style="position:relative; z-index:1;">
                     <i class="bi bi-dot" style="color: @priorityColor"></i>
                     @Ticket.Priority
@@ -48,34 +48,31 @@
         </div>
         <span class="badge rounded-5 bg-secondary fw-lighter">2</span>
     </div>
-    
+
     <div class="d-flex flex-column text-center border-top pt-2 overflow-auto"
          style="max-height: 240px">
-        @if(Ticket.TicketComments?.Count == 0)
-        {
+        @if (Ticket.TicketComments?.Count == 0) {
             <div class="text-center text-muted w-100">
                 No comments yet.
             </div>
-        } 
-        else if(Ticket.TicketComments?.Count > 0) {
+        } else if (Ticket.TicketComments?.Count > 0) {
 
-        @foreach(var comment in Ticket.TicketComments!)
-        {
-            bool isOwnComment = comment.UserId == userId;
+            @foreach (var comment in Ticket.TicketComments!) {
+                bool isOwnComment = comment.UserId == userId;
 
-            <div class="d-flex my-2 @(isOwnComment ? "justify-content-end" : "justify-content-start")">
-                <div class="chat-bubble p-3 shadow-sm
-                    @(isOwnComment ? "own-message" : "other-message")">
-                    <div class="small">
-                        @comment.Message
-                    </div>
-                    <div class="text-end text-muted mt-1" style="font-size: 0.75rem;">
-                        @comment.Timestamp.ToString("HH:mm")
+                <div class="d-flex my-2 @(isOwnComment ? "justify-content-end" : "justify-content-start")">
+                    <div class="chat-bubble p-3 shadow-sm
+                            @(isOwnComment ? "own-message" : "other-message")">
+                        <div class="small">
+                            @comment.Message
+                        </div>
+                        <div class="text-end text-muted mt-1" style="font-size: 0.75rem;">
+                            @comment.Timestamp.ToString("HH:mm")
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
         }
-        }     
     </div>
     <div class="border-t p-4">
         <EditForm Model="@this" OnValidSubmit="AddCommentAsync">
@@ -90,30 +87,38 @@
             </div>
         </EditForm>
     </div>
+    @if (IsAdmin && Ticket.Status != TicketStatus.Closed) {
+        <div class="d-flex flex-row gap-2">
+            <Button @onclick="CloseTicketAsync" Class="close-button bg-transparent">
+                <p class="text-danger">Close Ticket</p>
+                <i class="bi bi-archive-fill text-danger"></i>
+            </Button>
+        </div>
+    }
 
 </div>
 
 @code {
 
     [Parameter] public Ticket Ticket { get; set; }
-
+    [Parameter] public EventCallback OnClose { get; set; }
+    
     private HubConnection? hubConnection;
 
     private string priorityColor;
     private string userId;
-    private string NewCommentText { get; set; } = string.Empty; 
+    private string NewCommentText { get; set; } = string.Empty;
+    private bool IsAdmin;
 
-    protected override async Task OnInitializedAsync()
-
-    {
+    protected override async Task OnInitializedAsync() {
         userId = await userService.GetUserIdAsync();
+        IsAdmin = await userService.IsAdminAsync();
 
         hubConnection = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/ticketCommentHub"))
             .Build();
 
         hubConnection.On<TicketCommentDTO>("ReceiveComment", (comment) => {
-            if (comment.UserId == userId) return;
 
             Ticket.TicketComments.Add(new TicketComment {
                 TicketId = comment.TicketId,
@@ -128,8 +133,7 @@
         await hubConnection.StartAsync();
     }
 
-    protected override void OnParametersSet()
-    {   
+    protected override void OnParametersSet() {
         TicketPriority ticketPriority = Ticket.Priority;
         priorityColor = ticketPriority switch {
             TicketPriority.Low => "green",
@@ -140,6 +144,13 @@
 
     }
 
+    private async Task CloseTicketAsync() {
+        int result = await TicketService.ChangeStatus(Ticket, TicketStatus.Closed);
+        if (result == 1) {
+            //TicketStateService.NotifyChange();
+            await OnClose.InvokeAsync(null); 
+        }
+    }
 
     private async Task AddCommentAsync() {
         if (string.IsNullOrWhiteSpace(NewCommentText)) return;
@@ -160,8 +171,7 @@
         NewCommentText = string.Empty;
     }
 
-    private async Task HandleKeyDown(KeyboardEventArgs e)
-    {
+    private async Task HandleKeyDown(KeyboardEventArgs e) {
         if (e.Key == "Enter" && !e.ShiftKey) {
             await AddCommentAsync();
         }
@@ -177,6 +187,13 @@
 
 
 <style>
+    .close-button {
+        transition: transform 0.3s ease-in-out;
+    }
+
+        .close-button:hover {
+            transform: scale(1.05);
+        }
 
     .chat-bubble {
         max-width: 75%;
@@ -194,6 +211,7 @@
         background-color: #f0f0f0;
         border-bottom-left-radius: 0.25rem;
     }
+
     .opacity-box {
         position: absolute;
         inset: 0;
@@ -201,8 +219,8 @@
         opacity: 0.2;
     }
 
-    .opacity-box p {
-        opacity: 1;
-    }
+        .opacity-box p {
+            opacity: 1;
+        }
 
 </style>

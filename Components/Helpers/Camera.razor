@@ -1,0 +1,45 @@
+﻿@page "/camera"  
+@inject IJSRuntime JS  
+@rendermode InteractiveServer
+
+<video id="videoElement" width="320" height="240" autoplay></video> 
+
+<br />  
+<button @onclick="StartCamera">Kamera starten</button>  
+<button @onclick="StopCamera">Kamera stoppen</button>
+<button @onclick="TakePicture">Foto aufnehmen</button>
+<img id="photo" width="320" height="240" />
+
+@code {
+    private IJSObjectReference? _cameraModule;  
+
+    private async Task StartCamera()  
+    {  
+        try
+        {
+            _cameraModule = await JS.InvokeAsync<IJSObjectReference>("import", "/js/camera.js");
+            await _cameraModule.InvokeVoidAsync("startCamera", "videoElement");
+        } catch(Exception ex)
+        {
+            return;
+        }
+
+    }  
+    private async Task TakePicture()
+    {
+        if (_cameraModule != null)
+        {
+            await _cameraModule.InvokeVoidAsync("takePicture", "videoElement", "photo");
+        }
+    }
+
+    private async Task StopCamera()  
+    {  
+        if (_cameraModule != null)  
+        {  
+            await _cameraModule.InvokeVoidAsync("stopCamera", "videoElement");  
+            await _cameraModule.DisposeAsync();  
+            _cameraModule = null;  
+        }  
+    }  
+}

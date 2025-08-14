@@ -18,9 +18,14 @@
 
     @if (ShowList) {
         <div class="position-absolute z-3 mt-1 w-100 border rounded border-secondary bg-white shadow">
-            <input @bind="SearchTerm" @bind:event="oninput" @onkeydown="HandleKeyDown"
-                   placeholder="Search Option"
-                   class="form-control rounded-0 border-bottom" />
+            <input 
+                @ref="SearchInput"
+                @bind="SearchTerm" 
+                @bind:event="oninput" 
+                @onkeydown="HandleKeyDown"
+                placeholder = "SearchOption"
+                class="form-control rounded-0 border-bottom" 
+                />
             <div style="max-height: 160px; overflow-y: auto;">
                 @foreach (var option in FilteredOptions) {
                     <div class="d-flex align-items-center px-3 py-2 list-group-item list-group-item-action"
@@ -42,6 +47,7 @@
 
 @code {
     private ElementReference BoxContainer;
+    private ElementReference SearchInput;
 
     [Parameter]
     public List<string> AvailableOptions { get; set; } = new();
@@ -61,8 +67,15 @@
     private IEnumerable<string> FilteredOptions =>
         AvailableOptions.Where(o => o.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
 
-    private void ToggleDropdown() {
+    private async Task ToggleDropdown() {
         ShowList = !ShowList;
+
+        if (ShowList) {
+          
+            await Task.Delay(50);
+            await JS.InvokeVoidAsync("/js/focusElement", SearchInput);
+        }
+
     }
 
     private async Task SelectOption(string option) {

@@ -10,56 +10,81 @@
 @rendermode InteractiveServer
 
 <h3>Available Roles</h3>
-<div class="flex flex-column">
-    @foreach (var role in roles)
-    {
-        <div class="flex flex-row justify-content-between">
-            <span>@role.Name</span>
-        </div>
+<Toasts class="p-3" Messages="messages" />
 
-    }
-</div>
-<div class="flex flex-column">
-    <h1>Verified Users</h1>
-    @foreach (var user in users) {
-        @if (user.EmailConfirmed)
-        {
-            <div class="flex flex-row justify-content-between">
-                <span>@user.UserName</span>
-                <span>@user.Email</span>
-                <button class="btn btn-sm btn-outline-primary" @onclick="() => { editingFlag = true; selectedUser = user; }">
-                    <i class="bi bi-pencil"></i> 
-                </button>
-            </div>
-        }       
-    }
-</div>
-<div class="flex flex-column">
-    <h1>Not Verfied Users</h1>
-    @foreach (var user in users) {
-        @if (!user.EmailConfirmed) {
-            <div class="flex flex-row justify-content-between">
-                <span>@user.UserName</span>
-                <span>@user.Email</span>
-                <button class="btn btn-sm btn-outline-primary" @onclick="() => { editingFlag = true; selectedUser = user; }">
-                    <i class="bi bi-pencil"></i> 
-                </button>               
-            </div>
-        }
-    }
-    @if(editingFlag && selectedUser != null)
-    {
-        <div class="col-7 col-md-9">
-            <Dropdown style=" background-color: gainsboro; color: black;">
-                <DropdownToggleButton>@(selectedRole?.ToString() ?? "Select")</DropdownToggleButton>
-                <DropdownMenu>
-                    @foreach(var role in roles) {
-                        <DropdownItem @onclick="() => ChangeRoleAsync(selectedUser, role)" Type="DropdownItemType.Link">@role</DropdownItem>
-                    }
-            </DropdownMenu>
-        </Dropdown>
+<div class="container my-4">
+    <div class="card mb-4">
+        <div class="card-header fw-bold">
+            Rollen
         </div>
-    }
+        <div class="card-body p-0">
+            <ul class="list-group list-group-flush">
+                @foreach (var role in roles) {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        @role.Name
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header fw-bold text-success">
+            <i class="bi bi-check-circle-fill"></i> Verified Users
+        </div>
+        <div class="card-body p-0">
+            <ul class="list-group list-group-flush">
+                @foreach (var user in users.Where(u => u.EmailConfirmed)) {
+                    <li class="list-group-item d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>@user.UserName</strong><br />
+                                <small class="text-muted">@user.Email</small>
+                                <small class="text-black">@(userRoles.ContainsKey(user.Id) ? @userRoles[user.Id] : "No Roles")</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary"
+                                    @onclick="() => { editingFlag = true; selectedUser = user; }">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </div>
+
+                        @if (editingFlag && selectedUser == user) {
+                            <div class="mt-2">
+                                <Dropdown style="background-color: gainsboro; color: black;">
+                                    <DropdownToggleButton>@(selectedRole?.ToString() ?? "Select")</DropdownToggleButton>
+                                    <DropdownMenu>
+                                        @foreach (var role in roles) {
+                                            <DropdownItem @onclick="() => ChangeRoleAsync(selectedUser, role)"
+                                                          Type="DropdownItemType.Link">@role</DropdownItem>
+                                        }
+                                    </DropdownMenu>
+                                </Dropdown>
+                            </div>
+                        }
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header fw-bold text-danger">
+            <i class="bi bi-x-circle-fill"></i> Not Verified Users
+        </div>
+        <div class="card-body p-0">
+            <ul class="list-group list-group-flush">
+                @foreach (var user in users.Where(u => !u.EmailConfirmed)) {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>@user.UserName</strong><br />
+                            <small class="text-muted">@user.Email</small>
+                        </div>
+                        
+                    </li>
+                }
+            </ul>           
+        </div>
+    </div>
 </div>
 
 
@@ -69,11 +94,19 @@
     private bool editingFlag = false;
     private IdentityRole? selectedRole;
     private ApplicationUser? selectedUser;
+    private Dictionary<string, string> userRoles = new();
 
-    protected override void OnInitialized()
+    List<ToastMessage> messages = [];
+
+    protected override async Task OnInitializedAsync()
     {
         roles = GetAllRoles();
         users = GetAllUsers();
+
+        foreach (var user in users) {
+            var roles = await GetUserRoles(user);
+            userRoles[user.Id] = roles;
+        }
     }
     private List<IdentityRole> GetAllRoles() {
         return roleManager.Roles.ToList();
@@ -81,15 +114,48 @@
     private List<ApplicationUser> GetAllUsers() {
         return userManager.Users.ToList();
     }
+
+    private async Task<string> GetUserRoles(ApplicationUser user)
+    {
+        string joinedRoles = string.Empty;
+        IList<string> roles = await userDataService.GetUserRoles(user);
+        foreach(var role in roles)
+        {
+            joinedRoles += role + ",";
+        }
+        return joinedRoles;
+    }
     private async Task ChangeRoleAsync(ApplicationUser user, IdentityRole role)
     {
+        var userCopy = selectedUser;
         if (user == null) return;
 
         var roles = await userDataService.GetUserRoles(user);
         var removeResult = await userManager.RemoveFromRolesAsync(user, roles.AsEnumerable() );
 
-        await userManager.AddToRoleAsync(user, role.ToString());
+        var result = await userManager.AddToRoleAsync(user, role.ToString());
+
+        if (result.Succeeded) {
+            var updatedRoles = await GetUserRoles(userCopy!);
+            userRoles[userCopy!.Id] = string.Join(", ", updatedRoles);
+            ShowToast($"Role changed to {role.Name} for user {user.UserName}", ToastType.Success);
+
+            StateHasChanged();
+        } else {
+            ShowToast($"Failed to change role for user {user.UserName}: {string.Join(", ", result.Errors.Select(e => e.Description))}", ToastType.Warning);
+        }
+        editingFlag = false;
+        selectedUser = null;
+        selectedRole = null;
+       
     }
+    private void ShowToast(string content, ToastType type) =>
+        messages.Add(
+            new ToastMessage {
+                Type = type,
+                Title = $"{selectedUser}",
+                Content = @<div>@content</div>,
+            });
 
 }
  

@@ -13,15 +13,17 @@
 </div>
 
 
+
 @code {
     public string errorMsg = string.Empty;
     public string currentRole = string.Empty;
+    public bool isEmailConfirmed = false; 
 
     protected override async Task OnInitializedAsync()
     {
         var userId = await UserDataService.GetUserIdAsync();
         var user = await userManager.FindByIdAsync(userId);
-
+        
         if (user == null)
         {
             errorMsg = "Macht kein Sinn";
@@ -29,12 +31,23 @@
         }
         IList<string> userRoles = await UserDataService.GetUserRoles(user);
 
+        if (user.EmailConfirmed)
+        {
+            isEmailConfirmed = true;
+        }
+        else
+        {
+            errorMsg = "Your Email is not Confirmed, Please Confirm your Email to Access the System.";
+            return;
+        }
+
         if (userRoles == null || userRoles.Count == 0)
         {
             errorMsg = "Your Currently arent Assigned by Your Admin, Wait till your Admin Confirmed your Identiy and Asigned a Role.";
             return;
         }
 
+        
         if (userRoles != null)
         {
             foreach (var userRole in userRoles)

@@ -43,7 +43,11 @@ namespace HelpDesk_Benedict.Services
         }
         public async Task<List<Ticket>> GetTicketsAsync() {
             try {
-                return await _context.Tickets.Include(r => r.Room).Include(t => t.TicketComments).ToListAsync();
+                return await _context.Tickets
+                    .Include(r => r.Room)
+                    .Include(t => t.TicketComments)
+                    .AsNoTracking()
+                    .ToListAsync();
             } catch (Exception ex) {
                 return null;
             }
@@ -55,18 +59,16 @@ namespace HelpDesk_Benedict.Services
                 return null;
             }
         }
-        public async Task ChangeStatus(Ticket ticket, TicketStatus status) {
+        public async Task<int> ChangeStatus(Ticket ticket, TicketStatus status) {
             var user = _httpContextAccessor.HttpContext.User;
-            var currentUser = await _userDataService.GetCurrentUserAsync();
 
-            bool isOwner = ticket.User == currentUser;
             bool isPrivileged = user.IsInRole("Admin") || user.IsInRole("Support");
 
-            if (!isOwner ||!isPrivileged) {
+            if (!isPrivileged) {
                 throw new UnauthorizedAccessException("You do not have permission to change the status of this ticket.");
             }
 
-            await _context.Tickets.Where(t => t.Id == ticket.Id)
+            return await _context.Tickets.Where(t => t.Id == ticket.Id)
                 .ExecuteUpdateAsync(t => t.SetProperty(t => t.Status, status));
         }
     }

@@ -54,7 +54,7 @@
 
             await clientConfirmationService.SendConfirmationEmailAsync(Model.Email, confirmationLink);
             loginFailed = false;
-            NavigationManager.NavigateTo("/login", forceLoad: true);
+            NavigationManager.NavigateTo("/account/EMAIL_CONFIRM", forceLoad: true);
         }
         else
         {

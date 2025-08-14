@@ -58,3 +58,27 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+@media screen and (max-width: 600px) {
+    table, thead, tbody, th, td, tr {
+        display: block;
+    }
+
+    th {
+        display: none;
+    }
+
+    td {
+        position: relative;
+        padding-left: 50%;
+        white-space: normal;
+    }
+
+    td::before {    
+        position: absolute;
+        left: 10px;
+        top: 0;
+        content: attr(data-label);
+        font-weight: bold;
+    }
+}

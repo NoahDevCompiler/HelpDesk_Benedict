@@ -4,37 +4,67 @@
 @using HelpDesk_Benedict.Services
 @using Microsoft.AspNetCore.Authorization
 @inject TicketService ticketService
+@inject TicketStateService TicketStateService
 @attribute [Authorize(Roles = "Admin")]
 @rendermode InteractiveServer
 <div>
-    <div>
-        <h1>Pending Tickets</h1>
-        <p>300</p>
-        <h1>In Progress</h1>
-        <p>10</p>
-    </div> 
-    <div class="flex user-select-none" style="flex:1">     
-        <table class="table ticket-table">
+    <div class="container my-4">
+        <div class="row g-3">
+           
+            <div class="col-12 col-md-6">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-1">Open Tickets</h5>
+                            <p class="display-6 fw-bold mb-0 text-warning">@openTicketsCount</p>
+                        </div>
+                        <span class="badge bg-warning text-dark fs-6">
+                            <i class="bi bi-hourglass-split"></i> Open
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-1">In Progress</h5>
+                            <p class="display-6 fw-bold mb-0 text-primary">@inProgressTicketsCount</p>
+                        </div>
+                        <span class="badge bg-primary fs-6">
+                            <i class="bi bi-arrow-repeat"></i> In Progress
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="flex user-select-none" style="flex:1">
+        <table class="table ticket-table custom-table">
             <thead>
                 <tr>
-                    <th scope="col">Title<span class="sort-icon bi bi-sort-alpha-down" /></th>
-                    <th scope="col">Description<span class="sort-icon bi bi-sort-alpha-down"/></th>
-                    <th scope="col">Created At<span class="sort-icon bi bi-sort-alpha-down"/></th>
+                    <th scope="col">Titel<span class="sort-icon bi bi-sort-alpha-down" /></th>
+                    <th scope="col">Beschreibung<span class="sort-icon bi bi-sort-alpha-down" /></th>
+                    <th scope="col">Erstellt am<span class="sort-icon bi bi-sort-alpha-down" /></th>
                     <th scope="col">Status<span class="sort-icon bi bi-sort-alpha-down" /></th>
-                    <th scope="col">Room<span class="sort-icon bi bi-sort-alpha-down"/></th>
-                    <th scope="col">Floor<span class="sort-icon bi bi-sort-alpha-down" /></th>
+                    <th scope="col">Raum<span class="sort-icon bi bi-sort-alpha-down" /></th>
+                    <th scope="col">Etage<span class="sort-icon bi bi-sort-alpha-down" /></th>
+                    <th scope="col">Auswahl</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var ticket in tickets)
-                {
-                    <tr @onclick="() => openModal(ticket)" class="tr-item">
+                @foreach (var ticket in tickets) {
+                    <tr>
                         <td>@ticket.Title</td>
                         <td>@Truncate(ticket.Description, 30)</td>
-                        <td>@ticket.CreatedAt</td>
+                        <td>@ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
                         <td>@ticket.Status</td>
                         <td>@ticket.Room.Name</td>
                         <td>@ticket.Room.Floor</td>
+                        <td>
+                            <input type="checkbox" class="select-checkbox" />
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -42,25 +72,41 @@
     </div>
 
        <Modal @ref=modal Class="modal-left"></Modal>
-
-
 </div>
 
 @code {
     private Modal modal;
     private Ticket selectedTicket;
+    private int openTicketsCount = 0;
+    private int inProgressTicketsCount = 0;
     List<Ticket> tickets = new List<Ticket>();
 
     protected override async Task OnInitializedAsync() {
-        tickets = await ticketService.GetTicketsAsync();
+        //TicketStateService.OnChange += () => InvokeAsync(LoadTickets);
+
+        await LoadTickets();
+
     }
+    private async Task LoadTickets()
+    {
+        tickets = await ticketService.GetTicketsAsync();
+        openTicketsCount = tickets.Count(t => t.Status == TicketStatus.Open);
+        inProgressTicketsCount = tickets.Count(t => t.Status == TicketStatus.InProgress);
+        StateHasChanged();
+    }
+
     void selectTicket(Ticket ticket)
     {
         selectedTicket = ticket;
     }
+
     private async Task openModal(Ticket ticket) {
-        var parameters = new Dictionary<string, object>();
-        parameters.Add("Ticket", ticket);
+        var parameters = new Dictionary<string, object>()
+         {
+            { "Ticket", ticket },
+            { "OnClose", EventCallback.Factory.Create(this, CloseModal) }
+        };
+
         try {
             await modal.ShowAsync<TicketDetailsModal>(title: "Ticket Details", parameters: parameters);
         }
@@ -68,27 +114,62 @@
             Console.WriteLine($"Error opening modal: {ex.Message}");
         }
     }
+
+    private async Task CloseModal() {
+        await modal.HideAsync();
+        await OnInitializedAsync();
+    }
+
     string Truncate(string text, int maxLength) {
         if (string.IsNullOrEmpty(text)) return text;
         return text.Length <= maxLength ? text : text.Substring(0, maxLength) + "...";
+    }
+
+    public void Dispose()
+    {
+        //TicketStateService.OnChange -= StateHasChanged;    
     }
 }
 
 
 <style>
+    .ticket-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .ticket-table thead {
+        background-color: #f5f7fa;
+    }
+
     .ticket-table th,
     .ticket-table td {
-        text-align: center; 
-        border-right: 1px solid #ddd; 
+        text-align: center;
+        border-bottom: 1px solid #ddd;
         max-width: 200px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        padding: 10px 12px;
     }
 
-    .custom-table th:last-child,
-    .custom-table td:last-child {
-        border-right: none;
+    .ticket-table th {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .ticket-table tbody tr:hover {
+        background-color: #f0f4ff;
+        cursor: pointer;
+    }
+
+    .select-checkbox {
+        transform: scale(1.2);
+        cursor: pointer;
     }
 
     .sort-icon {

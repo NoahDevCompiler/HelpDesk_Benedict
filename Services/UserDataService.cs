@@ -38,6 +38,14 @@ namespace HelpDesk_Benedict.Services
             }
             return null;
         }        
+
+        public async Task<bool> IsAdminAsync() {
+            var user = await GetCurrentUserAsync();
+            if (user == null) {
+                return false;
+            }
+            return await _userManager.IsInRoleAsync(user, "Admin");
+        }
         public async Task<IdentityResult> RegisterUserAsync(ApplicationUser user, string password)
         {
             user.AdminConfirmed = false;

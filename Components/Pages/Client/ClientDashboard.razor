@@ -33,7 +33,7 @@
         
     </div>
     <div class="flex user-select-none" style="flex:1">
-        <table class="table ticket-table">
+        <table class="table ticket-table overflow-x-auto">
             <thead>
                 <tr>
                     <th scope="col">Title<span class="sort-icon bi bi-sort-alpha-down" /></th>
@@ -59,18 +59,20 @@
         </table>
     </div>
 
-    <Modal @ref=modal Class="modal-left"></Modal>
+    <Modal @ref="modalDetails" Class="modal-left"></Modal>
 </div>
 
-<Modal @ref="modal" OnTicketCreated="CreateTicket"></Modal>
+<Modal @ref="modalCreate" OnTicketCreated="CreateTicket"></Modal>
 @code {
-    private Modal modal;
+    private Modal modalCreate;
+    private Modal modalDetails;
     private int openTickets;
     private int completedTickets;
     private List<Ticket> TicketList = new List<Ticket>();
 
+
     protected override async Task OnInitializedAsync()
-    {
+    {     
         await LoadTicketsAsync();
     }
 
@@ -80,7 +82,7 @@
 
         try
         {
-            await modal.ShowAsync<CreateTicketModal>(title: "Create Ticket", parameters: parameters);
+            await modalCreate.ShowAsync<CreateTicketModal>(title: "Create Ticket", parameters: parameters);
         }
         catch (Exception ex)
         {
@@ -93,7 +95,7 @@
         var parameters = new Dictionary<string, object>();
         parameters.Add("Ticket", ticket);
         try {
-            await modal.ShowAsync<TicketDetailsModal>(title: "Ticket Details", parameters: parameters);
+            await modalDetails.ShowAsync<TicketDetailsModal>(title: "Ticket Details", parameters: parameters);
         }
         catch (Exception ex) {
             Console.WriteLine($"Error opening modal: {ex.Message}");
@@ -105,9 +107,8 @@
         ticket.UserId = userId;
 
         await ticketService.CreateTicketAsync(ticket);
-        await modal.HideAsync();
+        await modalCreate.HideAsync();
         await LoadTicketsAsync();
-        StateHasChanged();
     }
     private async Task LoadTicketsAsync() {
         TicketList = await ticketService.GetTicketsAsync();
@@ -120,10 +121,25 @@
     }
 }
 <style>
+
+    
     .top-button {
         position: fixed;
         top: 1rem;
         right: 1rem;
         z-index: 1000;
     }
+
+    .modal-left .modal-dialog {
+        position: fixed !important;
+        right: 20px !important;
+        top: 20px !important;
+        height: 90vh;
+        width: 400px;
+        overflow-y: auto;
+        border-radius: 15px;
+        z-index: 1050;
+    }   
+
+
 </style>
